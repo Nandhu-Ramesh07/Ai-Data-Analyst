@@ -6,7 +6,7 @@ from services.profiler import get_dataset_profile
 
 
 # --------------------------------------------------
-# Page Config
+# PAGE CONFIG
 # --------------------------------------------------
 
 st.set_page_config(
@@ -15,9 +15,8 @@ st.set_page_config(
     layout="wide"
 )
 
-
 # --------------------------------------------------
-# Header
+# HEADER
 # --------------------------------------------------
 
 st.title("📊 AI Data Analyst")
@@ -25,23 +24,8 @@ st.markdown(
     "Upload a CSV or Excel file and explore your data."
 )
 
-
 # --------------------------------------------------
-# Sidebar
-# --------------------------------------------------
-
-with st.sidebar:
-
-    st.header("Project Status")
-
-    if "dataset_loaded" not in st.session_state:
-        st.info("No dataset uploaded")
-    else:
-        st.success("Dataset Loaded")
-
-
-# --------------------------------------------------
-# File Upload
+# FILE UPLOADER
 # --------------------------------------------------
 
 uploaded_file = st.file_uploader(
@@ -49,40 +33,53 @@ uploaded_file = st.file_uploader(
     type=["csv", "xlsx"]
 )
 
+dataset_loaded = uploaded_file is not None
 
 # --------------------------------------------------
-# Main App
+# SIDEBAR
 # --------------------------------------------------
 
-if uploaded_file:
+with st.sidebar:
+
+    st.header("Project Status")
+
+    if dataset_loaded:
+        st.success("✅ Dataset Loaded")
+    else:
+        st.info("📂 No dataset uploaded")
+
+    st.divider()
+
+    st.header("AI Status")
+
+    st.warning("⏳ AI Model Not Connected")
+
+# --------------------------------------------------
+# MAIN CONTENT
+# --------------------------------------------------
+
+if dataset_loaded:
 
     try:
 
         df = load_file(uploaded_file)
 
-        st.session_state["dataset_loaded"] = True
-
         profile = get_dataset_profile(df)
 
         # ------------------------------------------
-        # Metrics
+        # METRICS
         # ------------------------------------------
 
         st.subheader("📌 Dataset Summary")
 
         col1, col2, col3 = st.columns(3)
 
-        with col1:
-            st.metric("Rows", profile["rows"])
-
-        with col2:
-            st.metric("Columns", profile["columns"])
-
-        with col3:
-            st.metric("Duplicates", profile["duplicates"])
+        col1.metric("Rows", profile["rows"])
+        col2.metric("Columns", profile["columns"])
+        col3.metric("Duplicates", profile["duplicates"])
 
         # ------------------------------------------
-        # Preview
+        # PREVIEW
         # ------------------------------------------
 
         st.subheader("👀 Dataset Preview")
@@ -93,7 +90,7 @@ if uploaded_file:
         )
 
         # ------------------------------------------
-        # Statistics
+        # STATISTICS
         # ------------------------------------------
 
         numeric_df = df.select_dtypes(
@@ -110,7 +107,7 @@ if uploaded_file:
             )
 
         # ------------------------------------------
-        # Column Information
+        # COLUMN INFO
         # ------------------------------------------
 
         st.subheader("📋 Column Information")
@@ -122,21 +119,23 @@ if uploaded_file:
             st.markdown("### Numeric Columns")
 
             if profile["numeric_columns"]:
-                st.write(profile["numeric_columns"])
+                for col in profile["numeric_columns"]:
+                    st.markdown(f"- {col}")
             else:
-                st.info("No numeric columns found")
+                st.info("No numeric columns")
 
         with col2:
 
             st.markdown("### Categorical Columns")
 
             if profile["categorical_columns"]:
-                st.write(profile["categorical_columns"])
+                for col in profile["categorical_columns"]:
+                    st.markdown(f"- {col}")
             else:
-                st.info("No categorical columns found")
+                st.info("No categorical columns")
 
         # ------------------------------------------
-        # Missing Values
+        # MISSING VALUES
         # ------------------------------------------
 
         missing_df = pd.DataFrame({
@@ -158,7 +157,7 @@ if uploaded_file:
         )
 
         # ------------------------------------------
-        # Data Types
+        # DATA TYPES
         # ------------------------------------------
 
         dtype_df = pd.DataFrame({
@@ -172,6 +171,32 @@ if uploaded_file:
             dtype_df,
             width="stretch"
         )
+
+        # ------------------------------------------
+        # CHAT PLACEHOLDER
+        # ------------------------------------------
+
+        st.divider()
+
+        st.subheader("💬 Ask Your Data")
+
+        question = st.text_input(
+            "Ask a question about your dataset"
+        )
+
+        if st.button("Analyze"):
+
+            if question.strip():
+
+                st.info(
+                    f"You asked: {question}"
+                )
+
+            else:
+
+                st.warning(
+                    "Please enter a question."
+                )
 
     except Exception as e:
 
