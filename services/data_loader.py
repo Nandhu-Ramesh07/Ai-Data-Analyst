@@ -1,11 +1,11 @@
 import pandas as pd
 
-def load_data(uploaded_file):
+def load_file(uploaded_file):
     
     """
     Load data from an uploaded file (CSV or Excel).
     """
-    
+
     file_name = uploaded_file.name.lower()
 
     if file_name.endswith('.csv'):
@@ -14,4 +14,6 @@ def load_data(uploaded_file):
         data = pd.read_excel(uploaded_file)
     else:
         raise ValueError("Unsupported file format. Please upload a CSV or Excel file.")
+    
+    return data
     
