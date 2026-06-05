@@ -203,8 +203,9 @@ if st.button("Analyze"):
             try:
 
                 response = agent.ask(
-                    question
-                )
+                            question,
+                            df
+                        )
 
                 st.success(
                     response
