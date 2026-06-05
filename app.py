@@ -3,6 +3,7 @@ import pandas as pd
 
 from services.data_loader import load_file
 from services.profiler import get_dataset_profile
+from agents.analyst import DataAnalystAgent
 
 
 # --------------------------------------------------
@@ -15,13 +16,32 @@ st.set_page_config(
     layout="wide"
 )
 
+
+# --------------------------------------------------
+# LOAD AGENT ONCE
+# --------------------------------------------------
+
+@st.cache_resource
+def load_agent():
+
+    agent = DataAnalystAgent()
+
+    status = agent.warmup()
+
+    return agent, status
+
+
+agent, model_ready = load_agent()
+
+
 # --------------------------------------------------
 # HEADER
 # --------------------------------------------------
 
 st.title("📊 AI Data Analyst")
+
 st.markdown(
-    "Upload a CSV or Excel file and explore your data."
+    "Upload a dataset and ask questions using AI."
 )
 
 # --------------------------------------------------
@@ -34,6 +54,7 @@ uploaded_file = st.file_uploader(
 )
 
 dataset_loaded = uploaded_file is not None
+
 
 # --------------------------------------------------
 # SIDEBAR
@@ -52,10 +73,14 @@ with st.sidebar:
 
     st.header("AI Status")
 
-    st.warning("⏳ AI Model Not Connected")
+    if model_ready:
+        st.success("🟢 Qwen3 Ready")
+    else:
+        st.error("🔴 Ollama Not Available")
+
 
 # --------------------------------------------------
-# MAIN CONTENT
+# DATASET SECTION
 # --------------------------------------------------
 
 if dataset_loaded:
@@ -66,10 +91,6 @@ if dataset_loaded:
 
         profile = get_dataset_profile(df)
 
-        # ------------------------------------------
-        # METRICS
-        # ------------------------------------------
-
         st.subheader("📌 Dataset Summary")
 
         col1, col2, col3 = st.columns(3)
@@ -78,20 +99,12 @@ if dataset_loaded:
         col2.metric("Columns", profile["columns"])
         col3.metric("Duplicates", profile["duplicates"])
 
-        # ------------------------------------------
-        # PREVIEW
-        # ------------------------------------------
-
         st.subheader("👀 Dataset Preview")
 
         st.dataframe(
             df.head(),
             width="stretch"
         )
-
-        # ------------------------------------------
-        # STATISTICS
-        # ------------------------------------------
 
         numeric_df = df.select_dtypes(
             include=["number"]
@@ -106,10 +119,6 @@ if dataset_loaded:
                 width="stretch"
             )
 
-        # ------------------------------------------
-        # COLUMN INFO
-        # ------------------------------------------
-
         st.subheader("📋 Column Information")
 
         col1, col2 = st.columns(2)
@@ -118,25 +127,17 @@ if dataset_loaded:
 
             st.markdown("### Numeric Columns")
 
-            if profile["numeric_columns"]:
-                for col in profile["numeric_columns"]:
-                    st.markdown(f"- {col}")
-            else:
-                st.info("No numeric columns")
+            for col in profile["numeric_columns"]:
+                st.markdown(f"- {col}")
 
         with col2:
 
             st.markdown("### Categorical Columns")
 
-            if profile["categorical_columns"]:
-                for col in profile["categorical_columns"]:
-                    st.markdown(f"- {col}")
-            else:
-                st.info("No categorical columns")
+            for col in profile["categorical_columns"]:
+                st.markdown(f"- {col}")
 
-        # ------------------------------------------
-        # MISSING VALUES
-        # ------------------------------------------
+        st.subheader("🧹 Missing Values")
 
         missing_df = pd.DataFrame({
             "Column": list(profile["missing_values"].keys()),
@@ -144,68 +145,73 @@ if dataset_loaded:
             "Missing %": list(profile["missing_percentages"].values())
         })
 
-        missing_df = missing_df.sort_values(
-            by="Missing %",
-            ascending=False
-        )
-
-        st.subheader("🧹 Missing Values")
-
         st.dataframe(
             missing_df,
             width="stretch"
         )
 
-        # ------------------------------------------
-        # DATA TYPES
-        # ------------------------------------------
+        st.subheader("🔍 Data Types")
 
         dtype_df = pd.DataFrame({
             "Column": list(profile["dtypes"].keys()),
             "Data Type": list(profile["dtypes"].values())
         })
 
-        st.subheader("🔍 Data Types")
-
         st.dataframe(
             dtype_df,
             width="stretch"
         )
 
-        # ------------------------------------------
-        # CHAT PLACEHOLDER
-        # ------------------------------------------
-
-        st.divider()
-
-        st.subheader("💬 Ask Your Data")
-
-        question = st.text_input(
-            "Ask a question about your dataset"
-        )
-
-        if st.button("Analyze"):
-
-            if question.strip():
-
-                st.info(
-                    f"You asked: {question}"
-                )
-
-            else:
-
-                st.warning(
-                    "Please enter a question."
-                )
-
     except Exception as e:
 
         st.error(
-            f"Error loading dataset: {str(e)}"
+            f"Dataset Error: {str(e)}"
         )
 
-else:
+# --------------------------------------------------
+# CHAT SECTION
+# --------------------------------------------------
 
-    st.info(
-        "👆 Upload a CSV or Excel file to begin analysis."
-    )
+st.divider()
+
+st.subheader("💬 Ask Your Data")
+
+question = st.text_input(
+    "Ask a question"
+)
+
+if st.button("Analyze"):
+
+    if not model_ready:
+
+        st.error(
+            "Model is not available."
+        )
+
+    elif not question.strip():
+
+        st.warning(
+            "Please enter a question."
+        )
+
+    else:
+
+        with st.spinner(
+            "🤖 Thinking..."
+        ):
+
+            try:
+
+                response = agent.ask(
+                    question
+                )
+
+                st.success(
+                    response
+                )
+
+            except Exception as e:
+
+                st.error(
+                    f"AI Error: {str(e)}"
+                )
