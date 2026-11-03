@@ -7,3 +7,7 @@ __pycache__/
 env/
 build/
 develop-eggs/
+# Node / frontend
+node_modules/
+apps/web/dist/
+*.tsbuildinfo

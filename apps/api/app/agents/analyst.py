@@ -1,4 +1,9 @@
+import re
+
 from ollama import chat
+
+
+THINK_PATTERN = re.compile(r"<think>.*?</think>", re.DOTALL)
 
 
 class DataAnalystAgent:
@@ -54,7 +59,10 @@ Answer only using the dataset information provided.
                     "role": "user",
                     "content": prompt
                 }
-            ]
+            ],
+            think=False
         )
 
-        return response["message"]["content"]
+        content = response["message"]["content"]
+
+        return THINK_PATTERN.sub("", content).strip()
