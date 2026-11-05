@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import type { AnalysisResult } from "../api/client";
+import AnalysisResultView from "./AnalysisResult";
 
 export interface ChatMessage {
   role: "user" | "assistant" | "error";
   content: string;
+  result?: AnalysisResult;
 }
 
 interface ChatPanelProps {
@@ -54,6 +57,7 @@ export default function ChatPanel({ messages, sending, onSend }: ChatPanelProps)
             {message.role === "assistant" ? (
               <div className="markdown">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+                {message.result && <AnalysisResultView result={message.result} />}
               </div>
             ) : (
               <p className="whitespace-pre-wrap">{message.content}</p>
