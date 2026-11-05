@@ -8,7 +8,7 @@ THINK_PATTERN = re.compile(r"<think>.*?</think>", re.DOTALL)
 
 class DataAnalystAgent:
 
-    def __init__(self, model="qwen3:8b"):
+    def __init__(self, model="qwen3.5:9b"):
         self.model = model
 
     def warmup(self):
