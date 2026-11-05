@@ -2,10 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   askQuestion,
+  downloadReport,
+  getConversationMessages,
+  getConversations,
   getDataset,
   getHealth,
   uploadDataset,
   type Dataset,
+  type Conversation,
   type Health,
   type Table,
 } from "./api/client";
@@ -44,6 +48,8 @@ export default function App() {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | undefined>();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
 
   // Poll health until the model warmup has finished (or the API comes back)
   useEffect(() => {
@@ -93,12 +99,26 @@ export default function App() {
       const result = await uploadDataset(file);
       setDataset(result);
       setMessages([]);
+      setConversationId(undefined);
+      setConversations([]);
       storeId(result.id);
     } catch (error) {
       setUploadError(`Dataset Error: ${(error as Error).message}`);
     } finally {
       setUploading(false);
     }
+  }
+
+  useEffect(() => {
+    if (!dataset) return;
+    getConversations(dataset.id).then(setConversations).catch(() => setConversations([]));
+  }, [dataset?.id]);
+
+  async function selectConversation(id: string) {
+    if (!dataset || !id) { setConversationId(undefined); setMessages([]); return; }
+    const restored = await getConversationMessages(dataset.id, id);
+    setConversationId(id);
+    setMessages(restored.map((message) => ({ role: message.role, content: message.content, result: message.result })));
   }
 
   async function handleSend(question: string) {
@@ -108,8 +128,10 @@ export default function App() {
     setSending(true);
 
     try {
-      const answer = await askQuestion(dataset.id, question);
-      setMessages((prev) => [...prev, { role: "assistant", content: answer }]);
+      const result = await askQuestion(dataset.id, question, conversationId);
+      setConversationId(result.conversation_id);
+      getConversations(dataset.id).then(setConversations).catch(() => undefined);
+      setMessages((prev) => [...prev, { role: "assistant", content: result.message, result }]);
     } catch (error) {
       setMessages((prev) => [...prev, { role: "error", content: (error as Error).message }]);
     } finally {
@@ -154,11 +176,13 @@ export default function App() {
         {dataset && missingTable && dtypeTable ? (
           <>
             <Section title="Ask Your Data" icon="💬">
+              <div className="mb-3 flex flex-wrap justify-between gap-2"><select value={conversationId ?? ""} onChange={(event) => selectConversation(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:bg-slate-900"><option value="">New conversation</option>{conversations.map((conversation) => <option value={conversation.id} key={conversation.id}>{conversation.title}</option>)}</select><button onClick={() => downloadReport(dataset.id, conversationId).catch((error) => setUploadError(error.message))} className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white">Download PDF report</button></div>
               <ChatPanel messages={messages} sending={sending} onSend={handleSend} />
             </Section>
 
             <Section title="Dataset Summary" icon="📌">
               <SummaryCards profile={dataset.profile} />
+              {dataset.profile.quality_warnings && dataset.profile.quality_warnings.length > 0 && <ul className="mt-4 list-disc pl-5 text-sm text-amber-700 dark:text-amber-300">{dataset.profile.quality_warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>}
             </Section>
 
             <Section title="Dataset Preview" icon="👀">

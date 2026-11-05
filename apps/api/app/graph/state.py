@@ -3,8 +3,8 @@ from typing import TypedDict
 
 
 class AgentState(TypedDict):
-    question : str
-    df : pd.DataFrame
-    pandas_code : str
-    result : str
-    response : str    
+    question: str
+    df: pd.DataFrame
+    profile: dict
+    method: str
+    result: dict

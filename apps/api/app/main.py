@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.agents.analyst import DataAnalystAgent
+from app.database import initialize_database
 from app.routers import datasets, health
 
 
@@ -18,7 +19,7 @@ def warmup(app: FastAPI):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-
+    initialize_database()
     app.state.agent = DataAnalystAgent()
     app.state.model_ready = None
 

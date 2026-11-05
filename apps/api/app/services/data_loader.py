@@ -1,4 +1,5 @@
 import pandas as pd
+import polars as pl
 
 
 def load_file(file_obj, filename):
@@ -12,6 +13,9 @@ def load_file(file_obj, filename):
 
     elif file_name.endswith(".xlsx"):
         df = pd.read_excel(file_obj)
+
+    elif file_name.endswith(".parquet"):
+        df = pl.read_parquet(file_obj).to_pandas()
 
     else:
         raise ValueError(

@@ -8,6 +8,14 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "python-multipart>=0.0.9",
     "pandas>=2.2",
+    "polars>=1.0",
+    "pyarrow>=17.0",
+    "duckdb>=1.1",
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.2",
+    "scipy>=1.14",
+    "scikit-learn>=1.5",
+    "reportlab>=4.2",
     "openpyxl>=3.1",
     "ollama>=0.6",
     "langgraph>=1.0",
@@ -20,4 +28,5 @@ package = false
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",
+    "pytest>=8.3",
 ]
