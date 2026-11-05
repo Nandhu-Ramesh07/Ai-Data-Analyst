@@ -28,6 +28,8 @@ def choose_method(question: str, df: pd.DataFrame) -> str:
         return "statistics"
     if any(word in q for word in ("chart", "plot", "graph", "visual", "trend")):
         return "visualization"
+    if "report" in q:
+        return "report"
     if any(word in q for word in ("profile", "quality", "missing", "duplicate", "overview")):
         return "profile"
     if any(word in q for word in ("sql", "select", "group by", "aggregate", "query")):
